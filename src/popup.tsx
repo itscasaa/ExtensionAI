@@ -3,7 +3,7 @@ import "style.css";
 import { useState, useEffect } from "react";
 
 import useOpenAI from "~hooks/use-openai";
-import usePluginConfig, { AutoSolveButtonVisibility, SolveMode } from "~hooks/use-plugin-config";
+import usePluginConfig, { AutoSolveButtonVisibility, SolveMode, ProviderType } from "~hooks/use-plugin-config";
 import { GptModel } from "~models/openai";
 import ContextManager from "~components/ContextManager";
 import { t } from "~i18n";
@@ -30,6 +30,11 @@ function IndexPopup() {
     useEffect(() => {
         let active = true;
         async function loadModels() {
+            if (pluginConfig.provider === "chatgpt_web" || pluginConfig.provider === "deepseek_web") {
+                setFetchedModels([]);
+                setShowCustomModelInput(false);
+                return;
+            }
             if (pluginConfig.apiBaseUrl === "https://casaaraksa.duckdns.org/v1") {
                 setFetchedModels([]);
                 setShowCustomModelInput(false);
@@ -108,21 +113,25 @@ function IndexPopup() {
                 Select the AI service provider you want to use.
             </p>
             <select 
-                value={
-                    pluginConfig.apiBaseUrl === "https://casaaraksa.duckdns.org/v1" ? "mimo" :
-                    (pluginConfig.apiBaseUrl === "https://api.9router.com/v1/chat/completions" || 
-                     pluginConfig.apiBaseUrl.includes("localhost:20128") || 
-                     pluginConfig.apiBaseUrl.includes("127.0.0.1:20128")) ? "9router" : "custom"
-                } 
+                value={pluginConfig.provider} 
                 onChange={(e) => {
-                    const val = e.target.value;
+                    const val = e.target.value as any;
+                    pluginConfig.setProvider(val);
                     if (val === "mimo") {
                         pluginConfig.setApiBaseUrl("https://casaaraksa.duckdns.org/v1");
                         pluginConfig.setApiModel("mimo/mimo-v2.5-pro");
-                        pluginConfig.setApiKey("sk-a9363991482934a3-wv32d0-e7ad3c87");
+                        pluginConfig.setApiKey("«redacted:sk-…»");
                     } else if (val === "9router") {
                         pluginConfig.setApiBaseUrl("http://localhost:20128/v1");
                         pluginConfig.setApiModel("YGFreeAja");
+                    } else if (val === "chatgpt_web") {
+                        pluginConfig.setApiBaseUrl("https://chatgpt.com");
+                        pluginConfig.setApiModel("chatgpt_web");
+                        pluginConfig.setApiKey("cookie");
+                    } else if (val === "deepseek_web") {
+                        pluginConfig.setApiBaseUrl("https://chat.deepseek.com");
+                        pluginConfig.setApiModel("deepseek_web");
+                        pluginConfig.setApiKey("cookie");
                     } else {
                         pluginConfig.setApiBaseUrl("");
                         pluginConfig.setApiModel("");
@@ -131,14 +140,13 @@ function IndexPopup() {
             >
                 <option value="mimo">Mimo API</option>
                 <option value="9router">9router API (Local)</option>
+                <option value="chatgpt_web">ChatGPT (Web Cookie)</option>
+                <option value="deepseek_web">DeepSeek (Web Cookie)</option>
                 <option value="custom">Custom Endpoint</option>
             </select>
         </div>
 
-        {pluginConfig.apiBaseUrl !== "https://casaaraksa.duckdns.org/v1" && 
-         !pluginConfig.apiBaseUrl.includes("localhost:20128") && 
-         !pluginConfig.apiBaseUrl.includes("127.0.0.1:20128") && 
-         pluginConfig.apiBaseUrl !== "https://api.9router.com/v1/chat/completions" && (
+        {pluginConfig.provider === "custom" && (
             <div style={{ marginTop: "12px" }}>
                 <label className={"popup-field-label"}>Custom API Base URL:</label>
                 <input 
@@ -152,16 +160,17 @@ function IndexPopup() {
 
         <hr />
 
-        <div>
-            <label className={"popup-field-label"}>
-                {pluginConfig.apiBaseUrl === "https://casaaraksa.duckdns.org/v1" ? t("apiKeyLabel") : "API Key:"}
-            </label>
+        {pluginConfig.provider !== "chatgpt_web" && pluginConfig.provider !== "deepseek_web" && (
+            <div>
+                <label className={"popup-field-label"}>
+                    {pluginConfig.provider === "mimo" ? t("apiKeyLabel") : "API Key:"}
+                </label>
 
-            <p>
-                {pluginConfig.apiBaseUrl === "https://casaaraksa.duckdns.org/v1" 
-                    ? t("apiKeyDescription") 
-                    : "AntiTestportal GPT requires an API key in order to work. You can test the key using the button below."}
-            </p>
+                <p>
+                    {pluginConfig.provider === "mimo" 
+                        ? t("apiKeyDescription") 
+                        : "AntiTestportal GPT requires an API key in order to work. You can test the key using the button below."}
+                </p>
 
             <input type={"text"} value={pluginConfig.apiKey} onChange={e => pluginConfig.setApiKey(e.target.value)}
                 placeholder={
@@ -181,17 +190,20 @@ function IndexPopup() {
                 {t("keyInvalid")} {keyValidationResponse}.
             </p>}
         </div>
+        )}
 
         <hr />
 
+        {pluginConfig.provider !== "chatgpt_web" && pluginConfig.provider !== "deepseek_web" && (
+        <>
         <div>
             <label className={"popup-field-label"}>{t("modelLabel")}</label>
             <p>
-                {pluginConfig.apiBaseUrl === "https://casaaraksa.duckdns.org/v1"
+                {pluginConfig.provider === "mimo"
                     ? t("modelDescription")
                     : "Specify the model to use, or select an auto-detected model."}
             </p>
-            {pluginConfig.apiBaseUrl === "https://casaaraksa.duckdns.org/v1" ? (
+            {pluginConfig.provider === "mimo" ? (
                 <select value={pluginConfig.apiModel} onChange={e => pluginConfig.setApiModel(e.target.value)}>
                     {Object.values(GptModel).map((model) => (
                         <option key={model} value={model}>
@@ -235,6 +247,32 @@ function IndexPopup() {
                 </div>
             )}
         </div>
+        </>
+        )}
+
+        {(pluginConfig.provider === "chatgpt_web" || pluginConfig.provider === "deepseek_web") && (
+            <div style={{
+                marginBottom: "12px",
+                padding: "10px",
+                borderRadius: "8px",
+                background: "rgba(99, 102, 241, 0.08)",
+                border: "1px solid rgba(99, 102, 241, 0.25)",
+                fontSize: "11px",
+                lineHeight: "1.45",
+                color: "#c7d2fe"
+            }}>
+                <strong style={{ display: "block", marginBottom: "4px", color: "#a5b4fc" }}>
+                    Web Cookie Mode
+                </strong>
+                {pluginConfig.provider === "chatgpt_web"
+                    ? "Login dulu di https://chatgpt.com (browser yang sama / Kiwi profile yang sama). Extension akan pakai session cookie kamu. Tidak perlu API key."
+                    : "Login dulu di https://chat.deepseek.com (browser yang sama / Kiwi profile yang sama). Extension akan pakai session cookie kamu. Tidak perlu API key."}
+                <br />
+                Screenshot + text/copy flow otomatis dikirim ke provider ini, lalu jawaban murni dikembalikan ke panel extension.
+                <br />
+                <strong style={{ color: "#a5b4fc" }}>1 percakapan reuse:</strong> semua prompt lanjut di chat yang sama (hemat token). Kalau idle &gt;24 jam, baru buat chat baru + prompt awal “jawab hanya jawaban saja”.
+            </div>
+        )}
 
         <hr />
 

@@ -516,14 +516,12 @@ const UniversalSolver = () => {
         setManualQuestion(manualQ);
 
         try {
-            const solution = await generateAnswer({
-                content: manualQ.questionText,
-                answerType: "long"
-            }) as OpenQuestionAnswer;
+            // Manual solver dipaksa pakai ChatGPT Web (cookie) di VPS
+            const answer = await requestAI(manualQ.questionText, undefined, "web");
             setManualQuestion({
                 ...manualQ,
                 status: "success",
-                answerText: solution.content || "No answer generated."
+                answerText: answer || "No answer generated."
             });
         } catch (error: any) {
             console.error(error);
@@ -557,9 +555,16 @@ const UniversalSolver = () => {
                 }
 
                 try {
-                    const prompt = "Solve the question shown in the screenshot. Provide ONLY the direct final answer. Do not include any explanations, reasoning, calculations, surrounding thoughts, or introductory words. If it is multiple choice, output only the correct choice's text and its index.";
-                    
-                    const answer = await requestAI(prompt, response.dataUrl);
+                    const prompt = [
+                        "Solve the question shown in the screenshot.",
+                        "OUTPUT RULE (STRICT): Return ONLY the final answer. No reasoning, no intro, no explanation.",
+                        "If multiple choice: reply exactly like 'a. option text' (lowercase letter + period + option text).",
+                        "If multiple correct options: 'a. text; c. text'.",
+                        "If open/short answer: return only the shortest correct answer.",
+                        "Match the language of the question on screen."
+                    ].join("\n");
+
+                    const answer = await requestAI(prompt, response.dataUrl, "web");
 
                     setVisualQuestion({
                         status: "success",

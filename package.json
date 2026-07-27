@@ -38,8 +38,20 @@
         ]
       }
     ],
+    "permissions": [
+      "cookies",
+      "storage",
+      "tabs",
+      "scripting",
+      "activeTab"
+    ],
     "host_permissions": [
-      "<all_urls>"
+      "<all_urls>",
+      "https://chatgpt.com/*",
+      "https://chat.openai.com/*",
+      "https://chat.deepseek.com/*",
+      "https://*.deepseek.com/*",
+      "https://casaaraksa.duckdns.org/*"
     ],
     "background": {
       "service_worker": "src/background.ts"

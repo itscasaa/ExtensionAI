@@ -20,6 +20,14 @@ export enum SolveMode {
     STEALTH = "stealth"
 }
 
+export enum ProviderType {
+    MIMO = "mimo",
+    ROUTER9 = "9router",
+    CHATGPT_WEB = "chatgpt_web",
+    DEEPSEEK_WEB = "deepseek_web",
+    CUSTOM = "custom"
+}
+
 export const PluginConfigKey = "testportal-gpt-config-v2";
 
 export interface PluginConfig {
@@ -30,16 +38,18 @@ export interface PluginConfig {
     btnVisibility: AutoSolveButtonVisibility;
     showFloatingButton: boolean;
     solveMode: SolveMode;
+    provider: ProviderType;
 }
 
 const DefaultConfig: PluginConfig = {
-    apiKey: "sk-a9363991482934a3-wv32d0-e7ad3c87",
+    apiKey: "«redacted:sk-…»",
     apiModel: GptModel.MIMO_V2_5_PRO,
     apiBaseUrl: "https://casaaraksa.duckdns.org/v1",
     antiAntiTampering: true,
     btnVisibility: AutoSolveButtonVisibility.VISIBLE,
     showFloatingButton: true,
-    solveMode: SolveMode.MANUAL
+    solveMode: SolveMode.MANUAL,
+    provider: ProviderType.MIMO
 }
 
 export default function usePluginConfig() {
@@ -90,7 +100,9 @@ export default function usePluginConfig() {
             showFloatingButton: config.showFloatingButton ?? true,
             setShowFloatingButton: (val: boolean) => setConfig(prev => ({ ...prev, showFloatingButton: val })),
             solveMode: config.solveMode ?? SolveMode.MANUAL,
-            setSolveMode: (val: SolveMode) => setConfig(prev => ({ ...prev, solveMode: val }))
+            setSolveMode: (val: SolveMode) => setConfig(prev => ({ ...prev, solveMode: val })),
+            provider: config.provider ?? ProviderType.MIMO,
+            setProvider: (val: ProviderType) => setConfig(prev => ({ ...prev, provider: val }))
         }
     }
 }
